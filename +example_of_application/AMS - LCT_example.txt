@@ -1,0 +1,388 @@
+=====================================================================
+WORKED EXAMPLE - Layered composite timber beam
+=====================================================================
+
+
+STEP 0 - WHAT THESE SCRIPTS DO
+---------------------------------------------------------------------
+Goal: predict the behaviour of a layered composite timber beam whose
+layers are connected by SEMI-RIGID connectors.
+
+Five analytical methods are implemented, each in its own folder:
+
+  GIRHAMMAR               exact 6th-order solution        n = 2 only
+  GIRHAMMAR_generalised   same theory extended            n >= 2
+  HEIMESHOFF              gamma-method (Eurocode 5)       n = 2 or 3
+  HEIMESHOFF_extended     gamma-method, matrix form       n >= 2
+  KREUZINGER              shear analogy, two beams        n >= 2
+
+Our beam has 5 layers, so only three of them apply:
+GIRHAMMAR_generalised, HEIMESHOFF_extended and KREUZINGER.
+GIRHAMMAR (n = 2) and HEIMESHOFF (n = 2 or 3) are ruled out by the
+number of layers - they will raise an explicit error if we try.
+
+This video runs the full process once, with GIRHAMMAR_generalised.
+The procedure is identical for the other two.
+
+
+
+
+
+
+
+
+
+
+
+
+
+STEP 0.1 - THE EXAMPLE
+---------------------------------------------------------------------
+Simply supported beam, single span, point load at midspan.
+
+  Span            L     = 5000 mm
+  Point load      F     = 15000 N  at midspan (x = 2500 mm)
+
+CROSS-SECTION - 5 layers. By convention layer 1 is the BOTTOM layer
+and layer n the TOP one. They must be listed in that order.
+
+  Layer | h [mm] | b [mm] | E [N/mm2] | G [N/mm2]
+  ------|--------|--------|-----------|------------
+    1   |   50   |  160   |   12000   |    1e8
+    2   |   60   |  140   |   10000   |    1e8
+    3   |   45   |  160   |    9000   |    1e8
+    4   |   50   |  160   |   10000   |    1e8
+    5   |   55   |  160   |   11000   |    1e8
+
+h	b	E	G
+50	160	12000	100000000
+60	140	10000	100000000
+45	160	9000	100000000
+50	160	10000	100000000
+55	160	11000	100000000
+
+
+  h : layer depth [mm]
+  b : layer width [mm]
+  E : modulus of elasticity along the grain [N/mm2] = [MPa]
+  G : shear modulus [N/mm2]
+
+  Why G = 1e8: G is used by KREUZINGER ONLY. The other four methods
+  read it but never use it - their formulations contain no shear
+  deformation of the layers themselves. Setting G very large
+  neutralises that term so that all methods are compared on the SAME
+  assumptions. Use a realistic G (about 650 MPa for spruce) only when
+  running KREUZINGER on its own.
+
+CONNECTORS - one row per interface, so n - 1 = 4 rows.
+Interface 1,2 is between layers 1 and 2, and so on up to 4,5.
+
+  Interface | c [N/mm] | s [mm]
+  ----------|----------|--------
+     1,2    |   8500   |   80
+     2,3    |   8000   |   80
+     3,4    |   8000   |   100
+     4,5    |   8000   |   80
+
+c	s
+8500	80
+8000	80
+8000	100
+8000	80
+
+  c : slip modulus of ONE connector [N/mm] - the force needed per mm of
+      slip. This is the semi-rigid behaviour: c -> infinity would be a
+      glued joint, c -> 0 would be no connection at all.
+  s : spacing between connectors along that interface [mm]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+STEP 1 - PREPARE THE INPUT DATA
+---------------------------------------------------------------------
+1. Open the folder of the method: GIRHAMMAR_generalised/
+2. Open README_GI-gen.txt first. Every folder has its own README
+   describing that method's formulation, its numerical implementation
+   and its known limitations. Worth reading before changing anything.
+3. Edit the two input files in that folder:
+
+   data_LAM.csv   one row per layer,     bottom layer first
+   data_CON.csv   one row per interface, n - 1 rows
+
+   Format: plain text, TAB-separated, first line = column headers.
+   Blank lines and lines starting with '#' are ignored, so the files
+   can be commented. Decimal mark is '.' by default.
+
+   The files are read from the folder the script is launched from.
+
+NOTE - if you prefer editing in Excel, keep your .xlsx files and run
+the converter once before calculating:
+
+       python xlsx_to_csv.py
+
+   It is at the repository root, also works with --recursive. openpyxl
+   is needed for the conversion only, not to run the analysis.
+
+If a value is missing or the separator is wrong, read_data() stops with
+an explicit message rather than computing with wrong numbers.
+
+
+
+
+
+
+
+
+
+
+
+
+STEP 2 - SET THE LOADING CASE
+---------------------------------------------------------------------
+Pick the script matching the loading mode. Our load is a point load at
+midspan = 3-point bending, approximated through a Fourier series:
+
+       GI_gen_SCRIPT_FS-3Pts.py
+
+Available modes in this folder: SINE, FS-UL, FS-3Pts, FS-4Pts.
+
+Ensure that you use the Python interpreter where the open-source 
+libraries are installed.
+Otherwise, install all the mentioned libraries.
+
+       import pandas as pd
+       import numpy as np
+       import math
+       import matplotlib.pyplot as plt
+
+
+Open 'GI_gen_SCRIPT_FS-3Pts.py' and edit the INPUT DATA block at the top:
+
+       L_beam   = 5000.0      beam length [mm]
+       F        = 15000.0     point load [N]
+
+Then choose WHERE the stresses will be extracted. Two separate
+locations, because bending and shear peak at different places:
+
+       x0_sigma = 2500.0      where normal stresses are computed [mm]
+                              -> midspan, where the moment is maximum
+       x0_tau   = 0.0         where shear stresses are computed [mm]
+                              -> at the support
+
+These only affect the "section" output files. The maxima along the
+whole span are exported separately and do not depend on this choice.
+
+
+
+
+
+
+
+
+
+
+
+
+STEP 3 - RUN AND CHECK
+---------------------------------------------------------------------
+From inside the method folder:
+
+       cd GIRHAMMAR_generalised
+       python GI_gen_SCRIPT_FS-3Pts.py
+
+Watch three things in the console:
+
+1. The step messages, each ending in OK.
+
+2. The maximum deflection.
+       
+3. The automatic consistency check.
+
+Also check the plots: the load, the deflected shape, the bending moment
+and the shear force should all look like a simply supported beam under a
+midspan point load.
+
+Results are written to three folders, created automatically:
+       RES_all/          loads, internal forces, deflections
+       RES_interface/    interface shear flow and connector forces
+       RES_stresses/     stresses in the layers
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+STEP 4 - READ THE RESULTS
+---------------------------------------------------------------------
+
+4.1 - DEFLECTIONS AND INTERNAL FORCES
+       RES_all/all_GI-gen_FS-3Pts.csv
+
+Open it in Excel (tab-separated). One row per position along the beam
+(defined by discretisation - n_points).
+
+Columns: x, the applied load q, the deflection w, the global M and T,
+then M_i and N_i for each layer.
+
+
+This is the first thing to check, and it is the signature of composite
+action: N_1 is POSITIVE, i.e. the bottom layer is in tension, which is
+exactly what is expected under a sagging moment. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4.2 - INTERFACE AND CONNECTOR FORCES
+       RES_interface/Ts_GI-gen_FS-3Pts.csv
+       RES_interface/Fconn_GI-gen_FS-3Pts.csv
+
+Two different quantities - do not confuse them.
+
+Ts = interface shear flow, in N PER MM, one column per interface. It is
+a DISTRIBUTED quantity, given continuously along the beam. It is
+largest near the supports (where the shear force is largest) and goes
+through zero at midspan.
+
+
+F_conn = force in ONE connector, in N. It is a POINT quantity. Each
+connector takes the shear flow accumulated over its tributary length,
+roughly Ts times the spacing s. This is the number to compare against
+the connector's design capacity.
+
+The file has one position column and one force column per interface,
+since interfaces with different spacings have different connector
+positions.
+
+Closing the loop: the connector force is about Ts * s
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+4.3 - STRESSES IN THE LAYERS
+Two complementary forms, do not mix them up.
+
+(a) MAXIMA ALONG THE SPAN - one value per layer, per position
+       RES_stresses/stresses_GI-gen_FS-3Pts_SIGMA_MAX_L.csv
+       RES_stresses/stresses_GI-gen_FS-3Pts_TAU_MAX_L.csv
+
+For each position x and each layer, the most stressed fibre of that
+layer. Use these to find where and in which layer the beam is critical.
+
+
+IMPORTANT - reading the sign in the layer containing the neutral axis.
+The value reported is the SIGNED value of largest magnitude in that
+layer. For layer 3, which straddles the neutral axis, the stress is
+positive on its lower face and negative on its upper face: its own
+bending contribution -z*M_i/I_i changes sign across its depth, while
+its axial contribution N_i/A_i is a tiny uniform +0.06 MPa. So the
+reported sign for that layer can flip from one position to the next,
+depending on which face happens to dominate. This is a consequence of
+how the maximum is taken, NOT an error in the calculation. For the
+other layers the axial part dominates and the sign is stable.
+
+
+
+
+
+
+(b) FULL DISTRIBUTION IN A GIVEN SECTION
+       RES_stresses/stresses_GI-gen_FS-3Pts_SIGMA_zglobal.csv
+       RES_stresses/stresses_GI-gen_FS-3Pts_TAU_zglobal.csv
+
+The stress profile through the FULL depth of the section, at the single
+location chosen in Step 2 (x0_sigma = 2500, x0_tau = 0). Plot stress
+against z to see the shape.
+
+What the normal-stress profile should look like: a sawtooth, not a
+straight line. Each layer has its own linear bending distribution
+superimposed on its own uniform axial stress, and the profile JUMPS at
+each interface. That discontinuity is the slip - it is the whole point
+of partial composite action. A fully composite beam would give a single
+straight line through the depth; fully separate layers would give five
+independent lines each centred on zero.
+
+The shear-stress profile, by contrast, must be CONTINUOUS across every
+interface and must vanish at the top and bottom free edges. That is a
+good check that the section has been assembled correctly.
+
+
+
+
+
+
+
+
+
+
+STEP 5 - REPEAT WITH THE OTHER METHODS
+---------------------------------------------------------------------
+Same five steps, in HEIMESHOFF_extended/ and KREUZINGER/.
+
+Two differences to be aware of:
+
+- HEIMESHOFF_extended uses 3Pts, not FS-3Pts. Same physical load case,
+  but the point load is treated through its exact closed-form diagrams
+  rather than a Fourier-series patch. Expect a small difference right
+  under the load and agreement elsewhere.
+
+- KREUZINGER is the only method that uses G. With G = 1e8 as set here,
+  it is on the same assumptions as the others. Its FS scripts size the
+  Fourier truncation and the grid automatically from L_beam and the
+  patch length - do not hard-code them.
+
+The three results can then be compared column by column: all methods
+export with the same sign conventions (w positive downwards, M_i
+positive for a positive global moment, N_i positive in tension), which
+is the whole point of the repository.
+
+Reminder of the domains: GIRHAMMAR is the exact reference but only for
+2 layers; HEIMESHOFF follows Eurocode 5 but is limited to 2 or 3
+layers. For our 5-layer beam, the three methods used here are the
+applicable ones, and comparing them is precisely what tells us how much
+the simplifying assumptions of each one cost.
