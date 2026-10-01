@@ -1,0 +1,43 @@
+cff-version: 1.2.0
+title: >-
+  Analytical Modeling Scripts of Layered Composite Timber
+  Beams
+message: >-
+  If you use these scripts in your research, please cite
+  them using the metadata below.
+type: software
+authors:
+  - given-names: Arthur
+    family-names: Duyck
+    email: 537278@umons.ac.be
+    affiliation: >-
+      University of Mons, Department of Structural
+      Mechanics - Timber Research Group
+identifiers:
+  - type: doi
+    value: 10.5281/zenodo.22826936
+    description: Concept DOI (resolves to the latest version)
+repository-code: 'https://github.com/REPLACE/WITH-YOUR-REPOSITORY'
+abstract: >-
+  Python implementations of five analytical methods for the
+  mechanical modelling of layered composite timber beams
+  with interlayer slip: the exact Girhammar theory for two
+  layers, its generalisation to n layers, the Eurocode 5
+  gamma-method (Heimeshoff), an extended matrix-based
+  gamma-method for an arbitrary number of layers, and the
+  Kreuzinger shear analogy method. The scripts compute
+  internal forces, deflections, stresses and connector
+  forces for a simply supported beam under several loading
+  modes, and are intended for the comparison of these
+  approaches on a common basis.
+keywords:
+  - timber engineering
+  - composite beams
+  - interlayer slip
+  - partial composite action
+  - gamma-method
+  - shear analogy
+  - Eurocode 5
+license: BSD-3-Clause
+version: 1.0.0
+date-released: '2026-09-30'

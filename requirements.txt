@@ -1,0 +1,36 @@
+# Analytical Modeling Scripts of Layered Composite Timber Beams
+# Runtime dependencies.
+#
+#   pip install -r requirements.txt
+#
+# Lower bounds are deliberately loose: the scripts only use long-established
+# APIs (numpy.polynomial.Polynomial.fit, numpy.linalg.solve/pinv,
+# scipy.integrate.solve_bvp, pandas.read_csv with sep/decimal/comment).
+#
+# NumPy 1.x and 2.x are both supported. np.trapz was removed in NumPy 2.0 and
+# replaced by np.trapezoid; each FUNCTIONS module defines an alias that
+# resolves to whichever exists, so no upper bound is needed.
+
+numpy>=1.20
+scipy>=1.5
+pandas>=1.0
+matplotlib>=3.3
+
+# ---------------------------------------------------------------------------
+# Optional - conversion only, NOT needed to run the analysis scripts.
+# Required solely by xlsx_to_csv.py, to convert legacy .xlsx input files to
+# the tab-separated .csv format now used. Uncomment if you need it.
+#
+# openpyxl>=3.0
+
+# ---------------------------------------------------------------------------
+# Versions the released code was developed and verified against:
+#   Python 3.12.3
+#   numpy 2.4.4
+#   scipy 1.17.1
+#   pandas 3.0.2
+#   matplotlib 3.10.8
+#   openpyxl 3.1.5
+#
+# To reproduce that exact environment rather than the loosest compatible one,
+# pin these values instead of the ranges above.
